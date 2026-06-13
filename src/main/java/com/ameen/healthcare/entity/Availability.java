@@ -1,7 +1,6 @@
 package com.ameen.healthcare.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -11,20 +10,12 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 /**
- * Represents a doctor's weekly recurring availability window.
- *
- * <p>For example, a doctor might be available every MONDAY from 09:00 to 17:00.
- * During appointment booking, each requested slot is validated against the
- * doctor's availability entries for the corresponding day of the week.
+ * A doctor's recurring weekly availability window.
+ * e.g. MONDAY 09:00–17:00 means bookable slots every Monday.
  */
 @Entity
 @Table(name = "availability")
 @EntityListeners(AuditingEntityListener.class)
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Availability {
 
     @Id
@@ -35,7 +26,6 @@ public class Availability {
     @JoinColumn(name = "doctor_id", nullable = false)
     private Doctor doctor;
 
-    /** Day of the week this availability applies to (e.g., MONDAY). */
     @Enumerated(EnumType.STRING)
     @Column(name = "day_of_week", nullable = false, length = 15)
     private DayOfWeek dayOfWeek;
@@ -53,5 +43,24 @@ public class Availability {
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-}
 
+    public Availability() {}
+
+    // Getters
+    public Long getId() { return id; }
+    public Doctor getDoctor() { return doctor; }
+    public DayOfWeek getDayOfWeek() { return dayOfWeek; }
+    public LocalTime getStartTime() { return startTime; }
+    public LocalTime getEndTime() { return endTime; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+
+    // Setters
+    public void setId(Long id) { this.id = id; }
+    public void setDoctor(Doctor doctor) { this.doctor = doctor; }
+    public void setDayOfWeek(DayOfWeek dayOfWeek) { this.dayOfWeek = dayOfWeek; }
+    public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
+    public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+}
