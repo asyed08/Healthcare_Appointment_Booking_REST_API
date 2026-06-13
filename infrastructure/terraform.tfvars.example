@@ -1,0 +1,40 @@
+# Healthcare API Infrastructure Variables
+# Copy this file to terraform.tfvars and update with your values
+
+# Azure Configuration
+azure_region = "East US"
+environment  = "dev"
+project_name = "healthcare-api"
+
+# App Service Configuration
+app_service_sku = "B2"
+
+# Database Configuration
+db_admin_username       = "psqladmin"
+db_admin_password       = "MySecureP@ssw0rd123" # Minimum 8 chars with uppercase, lowercase, number, special char
+db_name                 = "healthcaredb"
+db_sku                  = "B_Standard_B1ms"
+db_storage_mb           = 32768
+db_ha_enabled           = false
+db_geo_redundant_backup = false
+
+# Key Vault Configuration
+key_vault_purge_protection = true
+
+# Kafka Configuration (update with your Confluent Cloud or local broker)
+kafka_bootstrap_servers = "localhost:9092"
+
+# JWT Configuration (generate a strong key)
+jwt_secret_key = "your-very-secure-jwt-secret-key-of-at-least-32-characters-long"
+
+# Additional App Settings
+app_settings = {
+  SPRING_PROFILES_ACTIVE = "prod"
+  LOG_LEVEL              = "INFO"
+}
+
+# Additional Tags
+tags = {
+  CostCenter = "Engineering"
+  Team       = "Healthcare"
+}
