@@ -36,6 +36,7 @@ com/ameen/healthcare/repository/PatientRepository.class
 com/ameen/healthcare/controller/package-info.class
 com/ameen/healthcare/security/package-info.class
 com/ameen/healthcare/service/AppointmentEventConsumer.class
+com/ameen/healthcare/service/NotificationService.class
 com/ameen/healthcare/dto/event/AppointmentCreatedEvent.class
 com/ameen/healthcare/security/JwtService.class
 com/ameen/healthcare/repository/IdempotencyKeyRepository.class
