@@ -44,6 +44,14 @@ public class Appointment {
     @JoinColumn(name = "doctor_id", nullable = false)
     private Doctor doctor;
 
+    /**
+     * The concrete slot this appointment booked. May be {@code null} for
+     * legacy/manually created appointments that predate slot-based booking.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "slot_id")
+    private Slot slot;
+
     @Column(name = "appointment_date", nullable = false)
     private LocalDate appointmentDate;
 
@@ -65,6 +73,11 @@ public class Appointment {
     /** Optional notes from the patient or doctor regarding the appointment. */
     @Column(columnDefinition = "TEXT")
     private String notes;
+
+    /** Optimistic-lock version for safe concurrent status transitions. */
+    @Version
+    @Column(nullable = false)
+    private Long version;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
