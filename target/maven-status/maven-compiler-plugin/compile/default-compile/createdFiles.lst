@@ -10,9 +10,13 @@ com/ameen/healthcare/entity/Appointment.class
 com/ameen/healthcare/repository/AvailabilityRepository.class
 com/ameen/healthcare/dto/event/package-info.class
 com/ameen/healthcare/dto/event/AppointmentCancelledEvent.class
+com/ameen/healthcare/dto/response/AppointmentResponse.class
 com/ameen/healthcare/config/KafkaProducerConfig.class
 com/ameen/healthcare/dto/request/AvailabilityRequest.class
 com/ameen/healthcare/repository/DoctorRepository.class
+com/ameen/healthcare/dto/request/BookAppointmentRequest.class
+com/ameen/healthcare/exception/SlotUnavailableException.class
+com/ameen/healthcare/entity/IdempotencyKey.class
 com/ameen/healthcare/dto/request/LoginRequest.class
 com/ameen/healthcare/dto/request/package-info.class
 com/ameen/healthcare/entity/Slot.class
@@ -32,7 +36,9 @@ com/ameen/healthcare/security/package-info.class
 com/ameen/healthcare/service/AppointmentEventConsumer.class
 com/ameen/healthcare/dto/event/AppointmentCreatedEvent.class
 com/ameen/healthcare/security/JwtService.class
+com/ameen/healthcare/repository/IdempotencyKeyRepository.class
 com/ameen/healthcare/service/package-info.class
+com/ameen/healthcare/controller/AppointmentController.class
 com/ameen/healthcare/entity/User$Builder.class
 com/ameen/healthcare/service/AuthService.class
 com/ameen/healthcare/dto/response/SlotResponse.class
@@ -41,6 +47,7 @@ com/ameen/healthcare/exception/DuplicateResourceException.class
 com/ameen/healthcare/repository/AppointmentRepository.class
 com/ameen/healthcare/exception/ResourceNotFoundException.class
 com/ameen/healthcare/controller/DoctorController.class
+com/ameen/healthcare/service/AppointmentService.class
 com/ameen/healthcare/security/CustomUserDetailsService.class
 com/ameen/healthcare/config/JpaConfig.class
 com/ameen/healthcare/security/JwtAuthenticationFilter.class

@@ -4,6 +4,7 @@ import com.ameen.healthcare.dto.response.ApiError;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
@@ -44,6 +45,26 @@ public class GlobalExceptionHandler {
             fieldErrors.put(fe.getField(), fe.getDefaultMessage());
         }
         return build(HttpStatus.BAD_REQUEST, "Validation failed", req, fieldErrors);
+    }
+
+    @ExceptionHandler(SlotUnavailableException.class)
+    public ResponseEntity<ApiError> handleSlotUnavailable(SlotUnavailableException ex, HttpServletRequest req) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), req, null);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex, HttpServletRequest req) {
+        return build(HttpStatus.FORBIDDEN, ex.getMessage(), req, null);
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiError> handleIllegalState(IllegalStateException ex, HttpServletRequest req) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), req, null);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> handleIllegalArgument(IllegalArgumentException ex, HttpServletRequest req) {
+        return build(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), req, null);
     }
 
     @ExceptionHandler(Exception.class)
