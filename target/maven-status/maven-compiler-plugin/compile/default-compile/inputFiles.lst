@@ -6,12 +6,14 @@
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/config/JpaConfig.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/security/package-info.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/dto/response/SlotResponse.java
+/Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/dto/response/PatientProfileResponse.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/dto/request/BookAppointmentRequest.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/dto/response/AvailabilityResponse.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/dto/response/ApiError.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/entity/Appointment.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/enums/Role.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/entity/User.java
+/Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/service/PatientService.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/service/AppointmentService.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/dto/request/LoginRequest.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/dto/event/package-info.java
@@ -38,6 +40,7 @@
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/security/SecurityConfig.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/dto/request/RegisterRequest.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/service/package-info.java
+/Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/controller/PatientController.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/config/KafkaProducerConfig.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/dto/request/DoctorProfileRequest.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/repository/IdempotencyKeyRepository.java
@@ -49,6 +52,7 @@
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/dto/event/AppointmentCreatedEvent.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/exception/package-info.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/security/JwtAuthenticationFilter.java
+/Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/dto/request/PatientProfileRequest.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/service/AppointmentEventConsumer.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/exception/SlotUnavailableException.java
 /Users/syedfaheem/IdeaProjects/Healthcare_Appointment_Booking_REST_API/src/main/java/com/ameen/healthcare/entity/Availability.java

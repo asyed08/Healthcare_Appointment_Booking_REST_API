@@ -3,6 +3,7 @@ com/ameen/healthcare/entity/User.class
 com/ameen/healthcare/enums/AppointmentStatus.class
 com/ameen/healthcare/HealthcareApplication.class
 com/ameen/healthcare/dto/response/ApiError.class
+com/ameen/healthcare/dto/response/PatientProfileResponse.class
 com/ameen/healthcare/dto/response/AuthResponse.class
 com/ameen/healthcare/repository/UserRepository.class
 com/ameen/healthcare/service/DoctorService.class
@@ -23,6 +24,7 @@ com/ameen/healthcare/entity/Slot.class
 com/ameen/healthcare/dto/response/DoctorProfileResponse.class
 com/ameen/healthcare/repository/SlotRepository.class
 com/ameen/healthcare/service/SlotGenerationService.class
+com/ameen/healthcare/dto/request/PatientProfileRequest.class
 com/ameen/healthcare/exception/package-info.class
 com/ameen/healthcare/dto/request/RegisterRequest.class
 com/ameen/healthcare/controller/AuthController.class
@@ -47,6 +49,7 @@ com/ameen/healthcare/exception/DuplicateResourceException.class
 com/ameen/healthcare/repository/AppointmentRepository.class
 com/ameen/healthcare/exception/ResourceNotFoundException.class
 com/ameen/healthcare/controller/DoctorController.class
+com/ameen/healthcare/controller/PatientController.class
 com/ameen/healthcare/service/AppointmentService.class
 com/ameen/healthcare/security/CustomUserDetailsService.class
 com/ameen/healthcare/config/JpaConfig.class
@@ -56,5 +59,6 @@ com/ameen/healthcare/config/KafkaConsumerConfig.class
 com/ameen/healthcare/dto/request/DoctorProfileRequest.class
 com/ameen/healthcare/entity/Doctor.class
 com/ameen/healthcare/entity/Patient.class
+com/ameen/healthcare/service/PatientService.class
 com/ameen/healthcare/exception/GlobalExceptionHandler.class
 com/ameen/healthcare/enums/Role.class
