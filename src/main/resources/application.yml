@@ -36,9 +36,13 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
       properties:
         spring.json.add.type.headers: false
+        acks: all                          # Wait for all replicas
+        retries: 3                         # Retry failed sends
+        enable.idempotence: true           # Prevent duplicate messages
     consumer:
-      group-id: healthcare-group
+      group-id: appointment-service-group
       auto-offset-reset: earliest
+      max-poll-records: 10
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
