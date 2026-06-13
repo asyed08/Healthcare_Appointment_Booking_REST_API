@@ -2,7 +2,6 @@ package com.ameen.healthcare.entity;
 
 import com.ameen.healthcare.enums.SlotStatus;
 import jakarta.persistence.*;
-import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -12,28 +11,14 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 /**
- * A discrete, individually bookable time window for a {@link Doctor} on a
- * concrete calendar date.
+ * A discrete, pre-generated bookable time window for a doctor on a concrete date.
  *
- * <p>Slots are pre-generated ahead of time (e.g. 30 days in advance) by a
- * scheduled job from the doctor's recurring weekly {@link Availability}
- * windows. Treating availability as concrete slots (rather than computing it
- * on the fly) keeps the read path cheap and mirrors how real EHR systems
- * manage provider schedules.
- *
- * <p>The {@link Version @Version} field enables optimistic locking: if two
- * patients attempt to book the same slot concurrently, the second write fails
- * with an {@link jakarta.persistence.OptimisticLockException}, which the
- * service layer translates into a {@code 409 Conflict}.
+ * <p>The {@code version} column enables JPA optimistic locking — two concurrent
+ * booking attempts on the same slot will collide and the loser receives a 409.
  */
 @Entity
 @Table(name = "slots")
 @EntityListeners(AuditingEntityListener.class)
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Slot {
 
     @Id
@@ -55,12 +40,9 @@ public class Slot {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    @Builder.Default
     private SlotStatus status = SlotStatus.AVAILABLE;
 
-    /** Optimistic-lock version – prevents concurrent double-booking. */
     @Version
-    @Column(nullable = false)
     private Long version;
 
     @CreatedDate
@@ -70,4 +52,28 @@ public class Slot {
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public Slot() {}
+
+    // Getters
+    public Long getId() { return id; }
+    public Doctor getDoctor() { return doctor; }
+    public LocalDate getSlotDate() { return slotDate; }
+    public LocalTime getStartTime() { return startTime; }
+    public LocalTime getEndTime() { return endTime; }
+    public SlotStatus getStatus() { return status; }
+    public Long getVersion() { return version; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+
+    // Setters
+    public void setId(Long id) { this.id = id; }
+    public void setDoctor(Doctor doctor) { this.doctor = doctor; }
+    public void setSlotDate(LocalDate slotDate) { this.slotDate = slotDate; }
+    public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
+    public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
+    public void setStatus(SlotStatus status) { this.status = status; }
+    public void setVersion(Long version) { this.version = version; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }

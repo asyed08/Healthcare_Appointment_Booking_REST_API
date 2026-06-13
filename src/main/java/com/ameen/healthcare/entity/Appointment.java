@@ -2,7 +2,6 @@ package com.ameen.healthcare.entity;
 
 import com.ameen.healthcare.enums.AppointmentStatus;
 import jakarta.persistence.*;
-import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -12,24 +11,14 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 /**
- * Represents a booking record between a {@link Patient} and a {@link Doctor}
- * for a specific date and time slot.
+ * A booking record linking a patient to a doctor for a specific slot.
  *
- * <p>Status lifecycle:
- * <pre>
- *   PENDING → CONFIRMED → COMPLETED
- *   PENDING → CANCELLED
- *   CONFIRMED → CANCELLED
- * </pre>
+ * <p>The {@code version} column enables optimistic locking for concurrent
+ * status updates (e.g., simultaneous confirmation and cancellation).
  */
 @Entity
 @Table(name = "appointments")
 @EntityListeners(AuditingEntityListener.class)
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Appointment {
 
     @Id
@@ -44,10 +33,6 @@ public class Appointment {
     @JoinColumn(name = "doctor_id", nullable = false)
     private Doctor doctor;
 
-    /**
-     * The concrete slot this appointment booked. May be {@code null} for
-     * legacy/manually created appointments that predate slot-based booking.
-     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "slot_id")
     private Slot slot;
@@ -61,22 +46,14 @@ public class Appointment {
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
-    /**
-     * Current lifecycle status of the appointment.
-     * Defaults to {@link AppointmentStatus#PENDING} upon creation.
-     */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
-    @Builder.Default
     private AppointmentStatus status = AppointmentStatus.PENDING;
 
-    /** Optional notes from the patient or doctor regarding the appointment. */
     @Column(columnDefinition = "TEXT")
     private String notes;
 
-    /** Optimistic-lock version for safe concurrent status transitions. */
     @Version
-    @Column(nullable = false)
     private Long version;
 
     @CreatedDate
@@ -86,5 +63,35 @@ public class Appointment {
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    public Appointment() {}
+
+    // Getters
+    public Long getId() { return id; }
+    public Patient getPatient() { return patient; }
+    public Doctor getDoctor() { return doctor; }
+    public Slot getSlot() { return slot; }
+    public LocalDate getAppointmentDate() { return appointmentDate; }
+    public LocalTime getStartTime() { return startTime; }
+    public LocalTime getEndTime() { return endTime; }
+    public AppointmentStatus getStatus() { return status; }
+    public String getNotes() { return notes; }
+    public Long getVersion() { return version; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+
+    // Setters
+    public void setId(Long id) { this.id = id; }
+    public void setPatient(Patient patient) { this.patient = patient; }
+    public void setDoctor(Doctor doctor) { this.doctor = doctor; }
+    public void setSlot(Slot slot) { this.slot = slot; }
+    public void setAppointmentDate(LocalDate appointmentDate) { this.appointmentDate = appointmentDate; }
+    public void setStartTime(LocalTime startTime) { this.startTime = startTime; }
+    public void setEndTime(LocalTime endTime) { this.endTime = endTime; }
+    public void setStatus(AppointmentStatus status) { this.status = status; }
+    public void setNotes(String notes) { this.notes = notes; }
+    public void setVersion(Long version) { this.version = version; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
 

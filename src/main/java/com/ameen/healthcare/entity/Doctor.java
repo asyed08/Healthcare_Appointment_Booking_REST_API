@@ -1,7 +1,6 @@
 package com.ameen.healthcare.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -14,16 +13,11 @@ import java.util.List;
  * Professional profile for a doctor.
  *
  * <p>Linked one-to-one with a {@link User} account for authentication.
- * Owns a collection of {@link Availability} slots and {@link Appointment}s.
+ * Owns a collection of {@link Availability} windows and {@link Appointment}s.
  */
 @Entity
 @Table(name = "doctors")
 @EntityListeners(AuditingEntityListener.class)
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Doctor {
 
     @Id
@@ -52,14 +46,10 @@ public class Doctor {
     @Column(columnDefinition = "TEXT")
     private String bio;
 
-    /** Weekly recurring availability windows defined by this doctor. */
     @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     private List<Availability> availabilitySlots = new ArrayList<>();
 
-    /** All appointments booked with this doctor. */
     @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     private List<Appointment> appointments = new ArrayList<>();
 
     @CreatedDate
@@ -69,5 +59,34 @@ public class Doctor {
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-}
 
+    public Doctor() {}
+
+    // Getters
+    public Long getId() { return id; }
+    public User getUser() { return user; }
+    public String getFirstName() { return firstName; }
+    public String getLastName() { return lastName; }
+    public String getSpecialization() { return specialization; }
+    public String getLicenseNumber() { return licenseNumber; }
+    public String getPhone() { return phone; }
+    public String getBio() { return bio; }
+    public List<Availability> getAvailabilitySlots() { return availabilitySlots; }
+    public List<Appointment> getAppointments() { return appointments; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+
+    // Setters
+    public void setId(Long id) { this.id = id; }
+    public void setUser(User user) { this.user = user; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+    public void setSpecialization(String specialization) { this.specialization = specialization; }
+    public void setLicenseNumber(String licenseNumber) { this.licenseNumber = licenseNumber; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public void setBio(String bio) { this.bio = bio; }
+    public void setAvailabilitySlots(List<Availability> availabilitySlots) { this.availabilitySlots = availabilitySlots; }
+    public void setAppointments(List<Appointment> appointments) { this.appointments = appointments; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+}
