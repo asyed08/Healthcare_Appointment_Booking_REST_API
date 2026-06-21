@@ -269,7 +269,7 @@ jobs:
         run: |
           echo "Waiting for app to start..."
           for i in $(seq 1 12); do
-            if curl -sf https://${{ secrets.APP_SERVICE_NAME }}.azurewebsites.net/api-docs 2>/dev/null; then
+            if curl -sf https://${{ secrets.APP_SERVICE_URL }}/api-docs 2>/dev/null; then
               echo "App is healthy"
               exit 0
             fi
