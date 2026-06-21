@@ -1,0 +1,250 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  JAVA_VERSION: '17'
+  JAVA_DISTRIBUTION: 'temurin'
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Build & Test
+  #    Tests use H2 (in-memory) so no external Postgres or Kafka needed here.
+  # ---------------------------------------------------------------------------
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          cache: maven
+
+      - name: Run tests
+        run: mvn clean test
+
+      - name: Package JAR
+        run: mvn package -DskipTests
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: target/surefire-reports/
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # 2. Security Scan  (runs in parallel with build so we get fast feedback)
+  # ---------------------------------------------------------------------------
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          exit-code: '0'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ---------------------------------------------------------------------------
+  # 3. Terraform Plan  (runs on pull requests so you see infra changes in the PR)
+  # ---------------------------------------------------------------------------
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.event_name == 'pull_request'
+
+    defaults:
+      run:
+        working-directory: ./infrastructure
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        run: terraform init
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
+        run: terraform plan -no-color 2>&1 | tee tfplan.txt
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          TF_VAR_spring_datasource_url: ${{ secrets.TF_VAR_SPRING_DATASOURCE_URL }}
+          TF_VAR_spring_datasource_username: ${{ secrets.TF_VAR_SPRING_DATASOURCE_USERNAME }}
+          TF_VAR_spring_datasource_password: ${{ secrets.TF_VAR_SPRING_DATASOURCE_PASSWORD }}
+          TF_VAR_kafka_bootstrap_servers: ${{ secrets.TF_VAR_KAFKA_BOOTSTRAP_SERVERS }}
+          TF_VAR_kafka_sasl_jaas_config: ${{ secrets.TF_VAR_KAFKA_SASL_JAAS_CONFIG }}
+          TF_VAR_jwt_secret_key: ${{ secrets.TF_VAR_JWT_SECRET_KEY }}
+          TF_VAR_mail_username: ${{ secrets.MAIL_USERNAME }}
+          TF_VAR_mail_password: ${{ secrets.MAIL_PASSWORD }}
+          TF_VAR_ghcr_username: ${{ github.actor }}
+          TF_VAR_ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+          TF_VAR_ghcr_image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Comment PR with Terraform plan
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const plan = fs.readFileSync('./infrastructure/tfplan.txt', 'utf8');
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## Terraform Plan\n\`\`\`\n${plan.substring(0, 3000)}\n\`\`\``
+            });
+
+  # ---------------------------------------------------------------------------
+  # 4. Build & Push Docker Image  (only on pushes to main)
+  # ---------------------------------------------------------------------------
+  docker-build-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [build-and-test, security-scan]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=main
+            type=sha,prefix=sha-
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ---------------------------------------------------------------------------
+  # 5. Deploy to Azure  (Terraform apply + swap Docker image on App Service)
+  # ---------------------------------------------------------------------------
+  deploy:
+    name: Deploy to Azure
+    runs-on: ubuntu-latest
+    needs: docker-build-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://${{ secrets.APP_SERVICE_NAME }}.azurewebsites.net
+
+    defaults:
+      run:
+        working-directory: ./infrastructure
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          TF_VAR_environment: prod
+          TF_VAR_spring_datasource_url: ${{ secrets.TF_VAR_SPRING_DATASOURCE_URL }}
+          TF_VAR_spring_datasource_username: ${{ secrets.TF_VAR_SPRING_DATASOURCE_USERNAME }}
+          TF_VAR_spring_datasource_password: ${{ secrets.TF_VAR_SPRING_DATASOURCE_PASSWORD }}
+          TF_VAR_kafka_bootstrap_servers: ${{ secrets.TF_VAR_KAFKA_BOOTSTRAP_SERVERS }}
+          TF_VAR_kafka_sasl_jaas_config: ${{ secrets.TF_VAR_KAFKA_SASL_JAAS_CONFIG }}
+          TF_VAR_jwt_secret_key: ${{ secrets.TF_VAR_JWT_SECRET_KEY }}
+          TF_VAR_mail_username: ${{ secrets.MAIL_USERNAME }}
+          TF_VAR_mail_password: ${{ secrets.MAIL_PASSWORD }}
+          TF_VAR_ghcr_username: ${{ github.actor }}
+          TF_VAR_ghcr_token: ${{ secrets.GITHUB_TOKEN }}
+          TF_VAR_ghcr_image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+      - name: Deploy image to App Service
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ secrets.APP_SERVICE_NAME }}
+          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main
+
+      - name: Health check
+        run: |
+          echo "Waiting for app to start..."
+          for i in $(seq 1 30); do
+            if curl -sf https://${{ secrets.APP_SERVICE_NAME }}.azurewebsites.net/actuator/health 2>/dev/null; then
+              echo "App is healthy"
+              exit 0
+            fi
+            echo "Attempt $i/30, retrying in 10s..."
+            sleep 10
+          done
+          echo "Health check timed out"
+          exit 1

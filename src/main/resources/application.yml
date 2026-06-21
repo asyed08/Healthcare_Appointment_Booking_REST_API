@@ -3,9 +3,9 @@ spring:
     name: healthcare-api
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/healthcare_db
-    username: healthcare_user
-    password: healthcare_pass
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/healthcare_db}
+    username: ${SPRING_DATASOURCE_USERNAME:healthcare_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:healthcare_pass}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -47,7 +47,7 @@ spring:
     test-connection: false   # Set to true to fail fast if SMTP is unreachable on startup
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -72,11 +72,19 @@ server:
 application:
   security:
     jwt:
-      # 256-bit hex-encoded secret key (replace with a securely generated value in production)
-      secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      secret-key: ${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
       expiration: 86400000       # Access token TTL: 24 hours (ms)
       refresh-token:
         expiration: 604800000    # Refresh token TTL: 7 days (ms)
+
+# ===== Kafka SASL/SSL (set via env vars for Confluent Cloud; empty = PLAINTEXT for local) =====
+kafka:
+  security:
+    protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+  sasl:
+    mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
+    jaas:
+      config: ${KAFKA_SASL_JAAS_CONFIG:}
 
 # ===== Springdoc / Swagger UI =====
 springdoc:

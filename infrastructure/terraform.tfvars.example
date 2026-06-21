@@ -1,40 +1,32 @@
-# Healthcare API Infrastructure Variables
-# Copy this file to terraform.tfvars and update with your values
+# Copy this file to terraform.tfvars and fill in real values.
+# Never commit terraform.tfvars — it contains secrets.
 
-# Azure Configuration
-azure_region = "East US"
-environment  = "dev"
-project_name = "healthcare-api"
+azure_region    = "East US"
+environment     = "prod"
+project_name    = "healthcare-api"
+app_service_sku = "B1"
 
-# App Service Configuration
-app_service_sku = "B2"
+# Neon Tech Postgres — use the JDBC format (not the libpq format Neon shows you)
+spring_datasource_url      = "jdbc:postgresql://ep-your-endpoint.neon.tech/neondb?sslmode=require"
+spring_datasource_username = "neondb_owner"
+spring_datasource_password = "your-neon-password"
 
-# Database Configuration
-db_admin_username       = "psqladmin"
-db_admin_password       = "MySecureP@ssw0rd123" # Minimum 8 chars with uppercase, lowercase, number, special char
-db_name                 = "healthcaredb"
-db_sku                  = "B_Standard_B1ms"
-db_storage_mb           = 32768
-db_ha_enabled           = false
-db_geo_redundant_backup = false
+# Confluent Cloud Kafka
+kafka_bootstrap_servers = "pkc-xxxxx.eastus.azure.confluent.cloud:9092"
+kafka_sasl_jaas_config  = "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"YOUR_API_KEY\" password=\"YOUR_API_SECRET\";"
 
-# Key Vault Configuration
-key_vault_purge_protection = true
+# JWT — must be a Base64-encoded string of at least 32 characters
+jwt_secret_key = "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
 
-# Kafka Configuration (update with your Confluent Cloud or local broker)
-kafka_bootstrap_servers = "localhost:9092"
+# Gmail sender account
+mail_username = "your-email@gmail.com"
+mail_password = "your-gmail-app-password"
 
-# JWT Configuration (generate a strong key)
-jwt_secret_key = "your-very-secure-jwt-secret-key-of-at-least-32-characters-long"
+# GitHub Container Registry — create a PAT at github.com/settings/tokens with read:packages scope
+ghcr_username = "your-github-username"
+ghcr_token    = "ghp_your_personal_access_token"
+ghcr_image    = "ghcr.io/your-github-username/healthcare_appointment_booking_rest_api"
 
-# Additional App Settings
-app_settings = {
-  SPRING_PROFILES_ACTIVE = "prod"
-  LOG_LEVEL              = "INFO"
-}
-
-# Additional Tags
 tags = {
   CostCenter = "Engineering"
-  Team       = "Healthcare"
 }
