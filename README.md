@@ -18,6 +18,7 @@ A Spring Boot REST API for managing healthcare appointments, doctor availability
 | API Docs | Springdoc OpenAPI (Swagger UI) |
 | Build | Maven |
 | Container | Docker |
+| Logging | Logstash Logback Encoder (structured JSON) |
 | IaC | Terraform (Azure) |
 | CI/CD | GitHub Actions |
 
@@ -31,6 +32,7 @@ A Spring Boot REST API for managing healthcare appointments, doctor availability
 - **Idempotency** — SHA-256 request deduplication (24 h TTL) for safe client retries
 - **Pagination** — all list endpoints return `Page<T>` with configurable page size, number, and sort order
 - **Event-Driven Notifications** — Kafka events on booking/cancellation; HTML confirmation emails via `JavaMailSender`
+- **Structured Logging** — JSON log output in production with per-request MDC context (`requestId`, `userId`, `appointmentId`, `method`, `path`); human-readable format locally
 - **OpenAPI / Swagger UI** — interactive docs at `/swagger-ui/index.html`
 
 ## Project Structure
@@ -247,6 +249,54 @@ Managed by Flyway, run automatically on startup.
 | `V1` | Initial schema — users, doctors, patients, availability, appointments |
 | `V2` | Slots table with `version` column for optimistic locking |
 | `V3` | `idempotency_keys` table for deduplication |
+
+## Observability
+
+### Structured Logging
+
+In production (any Spring profile other than `local`), all logs are emitted as JSON using [Logstash Logback Encoder](https://github.com/logfmt/logstash-logback-encoder). Azure App Service captures stdout automatically, making logs queryable in Log Stream and Log Analytics.
+
+Every request is stamped with a set of MDC fields that appear on every log line for that request:
+
+| Field | Source | Description |
+|-------|--------|-------------|
+| `requestId` | `MdcLoggingFilter` | 12-char UUID fragment, unique per HTTP request |
+| `method` | `MdcLoggingFilter` | HTTP method (`GET`, `POST`, etc.) |
+| `path` | `MdcLoggingFilter` | Request URI |
+| `userId` | `AppointmentService` | Authenticated user's DB ID (booking/cancel flows) |
+| `appointmentId` | `AppointmentService` | Appointment ID once created or resolved |
+
+The `requestId` is also returned to the caller as an `X-Request-Id` response header, so clients can include it in support requests.
+
+**Example production log line:**
+```json
+{
+  "@timestamp": "2024-11-01T14:23:01.412Z",
+  "level": "INFO",
+  "logger": "c.a.h.service.AppointmentService",
+  "message": "Appointment 42 booked: patient=1, doctor=3, slot=17",
+  "requestId": "a3f9c12b8e41",
+  "userId": "1",
+  "appointmentId": "42",
+  "method": "POST",
+  "path": "/api/v1/appointments"
+}
+```
+
+**Locally** (profile `local`), logs are printed in a readable format:
+```
+14:23:01.412 INFO  c.a.h.service.AppointmentService [a3f9c12b8e41] - Appointment 42 booked
+```
+
+### Viewing logs on Azure
+
+```bash
+# Live log stream
+az webapp log tail --resource-group healthcare-rg --name Healthcare-Booking
+
+# Download recent logs
+az webapp log download --resource-group healthcare-rg --name Healthcare-Booking
+```
 
 ## Infrastructure & Deployment
 
