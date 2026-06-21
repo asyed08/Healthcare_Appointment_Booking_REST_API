@@ -99,6 +99,13 @@
             <version>2.5.0</version>
         </dependency>
 
+        <!-- ===== Structured JSON Logging ===== -->
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>7.4</version>
+        </dependency>
+
         <!-- ===== Email (JavaMailSender) ===== -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
