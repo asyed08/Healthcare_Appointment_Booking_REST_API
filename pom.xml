@@ -21,6 +21,7 @@
     <properties>
         <java.version>17</java.version>
         <jjwt.version>0.12.5</jjwt.version>
+        <testcontainers.version>1.20.4</testcontainers.version>
     </properties>
 
     <dependencies>
@@ -98,12 +99,6 @@
             <version>2.5.0</version>
         </dependency>
 
-        <!-- ===== Apache Kafka ===== -->
-        <dependency>
-            <groupId>org.springframework.kafka</groupId>
-            <artifactId>spring-kafka</artifactId>
-        </dependency>
-
         <!-- ===== Email (JavaMailSender) ===== -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -131,11 +126,43 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
 
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!--
+                        Docker Desktop on Mac (v4.34+) rejects API versions below 1.40.
+                        Testcontainers 1.20.4 ships a shaded docker-java whose config key is
+                        the system property "api.version" (not the DOCKER_API_VERSION env var).
+                        DOCKER_HOST points to the active context socket on macOS;
+                        on Linux CI the default /var/run/docker.sock is used instead.
+                    -->
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                        <include>**/*IT.java</include>
+                    </includes>
+                    <argLine>-Dapi.version=1.44</argLine>
+                    <environmentVariables>
+                        <DOCKER_HOST>unix:///Users/syedfaheem/.docker/run/docker.sock</DOCKER_HOST>
+                    </environmentVariables>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

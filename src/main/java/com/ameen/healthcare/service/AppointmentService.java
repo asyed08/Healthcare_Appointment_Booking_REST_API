@@ -19,12 +19,14 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.HexFormat;
-import java.util.List;
 
 /**
  * Core appointment booking logic:
@@ -213,29 +215,29 @@ public class AppointmentService {
     // ─── Queries ──────────────────────────────────────────────────────────────
 
     /**
-     * Returns all appointments for the authenticated patient, newest first.
+     * Returns appointments for the authenticated patient, newest first, paginated.
      */
     @Transactional(readOnly = true)
-    public List<AppointmentResponse> getMyAppointmentsAsPatient(Long userId) {
+    public Page<AppointmentResponse> getMyAppointmentsAsPatient(Long userId, Pageable pageable) {
         Patient patient = patientRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Patient profile not found for user: " + userId));
         return appointmentRepository
-                .findByPatientIdOrderByAppointmentDateDescStartTimeDesc(patient.getId())
-                .stream().map(AppointmentResponse::from).toList();
+                .findByPatientIdOrderByAppointmentDateDescStartTimeDesc(patient.getId(), pageable)
+                .map(AppointmentResponse::from);
     }
 
     /**
-     * Returns all appointments for the authenticated doctor, newest first.
+     * Returns appointments for the authenticated doctor, newest first, paginated.
      */
     @Transactional(readOnly = true)
-    public List<AppointmentResponse> getMyAppointmentsAsDoctor(Long userId) {
+    public Page<AppointmentResponse> getMyAppointmentsAsDoctor(Long userId, Pageable pageable) {
         Doctor doctor = doctorRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Doctor profile not found for user: " + userId));
         return appointmentRepository
-                .findByDoctorIdOrderByAppointmentDateDescStartTimeDesc(doctor.getId())
-                .stream().map(AppointmentResponse::from).toList();
+                .findByDoctorIdOrderByAppointmentDateDescStartTimeDesc(doctor.getId(), pageable)
+                .map(AppointmentResponse::from);
     }
 
     /**

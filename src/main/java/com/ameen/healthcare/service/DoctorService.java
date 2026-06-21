@@ -15,6 +15,8 @@ import com.ameen.healthcare.repository.AvailabilityRepository;
 import com.ameen.healthcare.repository.DoctorRepository;
 import com.ameen.healthcare.repository.SlotRepository;
 import com.ameen.healthcare.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -120,14 +122,12 @@ public class DoctorService {
     }
 
     /**
-     * Lists all doctors, optionally filtered by specialization.
+     * Lists doctors, optionally filtered by specialization, paginated.
      */
     @Transactional(readOnly = true)
-    public List<DoctorProfileResponse> listDoctors(String specialization) {
-        return doctorRepository.findBySpecializationOptional(specialization)
-                .stream()
-                .map(DoctorProfileResponse::from)
-                .toList();
+    public Page<DoctorProfileResponse> listDoctors(String specialization, Pageable pageable) {
+        return doctorRepository.findBySpecializationOptional(specialization, pageable)
+                .map(DoctorProfileResponse::from);
     }
 
     // ─── Availability ──────────────────────────────────────────────────────────
