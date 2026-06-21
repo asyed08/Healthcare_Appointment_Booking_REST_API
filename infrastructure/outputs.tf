@@ -8,7 +8,6 @@ output "app_service_url" {
   value       = "https://${azurerm_linux_web_app.main.default_hostname}"
 }
 
-
 output "resource_group_name" {
   description = "Resource group that contains all resources"
   value       = azurerm_resource_group.main.name
