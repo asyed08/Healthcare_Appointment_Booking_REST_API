@@ -7,6 +7,7 @@ import com.ameen.healthcare.dto.response.DoctorProfileResponse;
 import com.ameen.healthcare.dto.response.SlotResponse;
 import com.ameen.healthcare.service.DoctorService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/doctors")
 @Tag(name = "Doctors", description = "Doctor profile and availability management")
+@SecurityRequirement(name = "bearerAuth")
 public class DoctorController {
 
     private final DoctorService doctorService;
