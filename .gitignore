@@ -14,7 +14,6 @@ src/main/resources/application-local.yml
 
 # ===== Terraform =====
 infrastructure/.terraform/
-infrastructure/.terraform.lock.hcl
 infrastructure/terraform.tfvars
 infrastructure/tfplan
 infrastructure/tfplan.txt

@@ -96,10 +96,3 @@ springdoc:
     tags-sorter: alpha
     display-request-duration: true
 
-# ===== Logging =====
-logging:
-  level:
-    com.ameen.healthcare: DEBUG
-    org.springframework.security: INFO
-    org.flywaydb: INFO
-
