@@ -82,10 +82,10 @@ resource "azurerm_linux_web_app" "main" {
     MAIL_PASSWORD = var.mail_password
 
     # Docker / Azure App Service
-    WEBSITES_PORT                       = "8080"
-    DOCKER_REGISTRY_SERVER_URL          = "https://ghcr.io"
-    DOCKER_REGISTRY_SERVER_USERNAME     = var.ghcr_username
-    DOCKER_REGISTRY_SERVER_PASSWORD     = var.ghcr_token
+    WEBSITES_PORT                   = "8080"
+    DOCKER_REGISTRY_SERVER_URL      = "https://ghcr.io"
+    DOCKER_REGISTRY_SERVER_USERNAME = var.ghcr_username
+    DOCKER_REGISTRY_SERVER_PASSWORD = var.ghcr_token
   }
 
   site_config {
