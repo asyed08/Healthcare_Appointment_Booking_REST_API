@@ -18,6 +18,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.LocalDate;
@@ -242,15 +246,16 @@ class AppointmentServiceTest {
     // ─── getMyAppointmentsAsPatient ───────────────────────────────────────────
 
     @Test
-    void getMyAppointmentsAsPatient_returnsListForPatient() {
+    void getMyAppointmentsAsPatient_returnsPageForPatient() {
+        Pageable pageable = PageRequest.of(0, 20);
         when(patientRepository.findByUserId(1L)).thenReturn(Optional.of(patient));
-        when(appointmentRepository.findByPatientIdOrderByAppointmentDateDescStartTimeDesc(1L))
-                .thenReturn(List.of(appointment));
+        when(appointmentRepository.findByPatientIdOrderByAppointmentDateDescStartTimeDesc(1L, pageable))
+                .thenReturn(new PageImpl<>(List.of(appointment)));
 
-        List<AppointmentResponse> result = service.getMyAppointmentsAsPatient(1L);
+        var result = service.getMyAppointmentsAsPatient(1L, pageable);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).patientId()).isEqualTo(1L);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).patientId()).isEqualTo(1L);
     }
 
     // ─── getAppointmentById ───────────────────────────────────────────────────

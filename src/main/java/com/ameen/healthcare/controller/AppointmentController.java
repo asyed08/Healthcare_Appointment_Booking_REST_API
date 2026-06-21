@@ -9,14 +9,16 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 /**
  * REST endpoints for appointment booking and management.
@@ -69,21 +71,23 @@ public class AppointmentController {
     @GetMapping("/my/patient")
     @PreAuthorize("hasRole('PATIENT')")
     @Operation(summary = "Get my appointments as a patient, newest first")
-    public ResponseEntity<List<AppointmentResponse>> getMyPatientAppointments(
-            @AuthenticationPrincipal UserDetails principal) {
+    public ResponseEntity<Page<AppointmentResponse>> getMyPatientAppointments(
+            @AuthenticationPrincipal UserDetails principal,
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
 
         Long userId = resolveUserId(principal);
-        return ResponseEntity.ok(appointmentService.getMyAppointmentsAsPatient(userId));
+        return ResponseEntity.ok(appointmentService.getMyAppointmentsAsPatient(userId, pageable));
     }
 
     @GetMapping("/my/doctor")
     @PreAuthorize("hasRole('DOCTOR')")
     @Operation(summary = "Get my appointments as a doctor, newest first")
-    public ResponseEntity<List<AppointmentResponse>> getMyDoctorAppointments(
-            @AuthenticationPrincipal UserDetails principal) {
+    public ResponseEntity<Page<AppointmentResponse>> getMyDoctorAppointments(
+            @AuthenticationPrincipal UserDetails principal,
+            @ParameterObject @PageableDefault(size = 20) Pageable pageable) {
 
         Long userId = resolveUserId(principal);
-        return ResponseEntity.ok(appointmentService.getMyAppointmentsAsDoctor(userId));
+        return ResponseEntity.ok(appointmentService.getMyAppointmentsAsDoctor(userId, pageable));
     }
 
     @GetMapping("/{id}")

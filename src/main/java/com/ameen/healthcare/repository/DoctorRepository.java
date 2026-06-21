@@ -1,12 +1,13 @@
 package com.ameen.healthcare.repository;
 
 import com.ameen.healthcare.entity.Doctor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
 import java.util.Optional;
 
 /** Data-access for {@link Doctor} professional profiles. */
@@ -28,5 +29,5 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
             WHERE :specialization IS NULL
                OR LOWER(d.specialization) = LOWER(:specialization)
             """)
-    List<Doctor> findBySpecializationOptional(@Param("specialization") String specialization);
+    Page<Doctor> findBySpecializationOptional(@Param("specialization") String specialization, Pageable pageable);
 }
