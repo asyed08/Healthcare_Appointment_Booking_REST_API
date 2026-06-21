@@ -30,7 +30,7 @@ A Spring Boot REST API for managing healthcare appointments, doctor availability
 - **Appointment Booking** — optimistic locking (`@Version`) prevents double-bookings under concurrent load
 - **Idempotency** — SHA-256 request deduplication (24 h TTL) for safe client retries
 - **Event-Driven Notifications** — Kafka events on booking/cancellation; HTML confirmation emails via `JavaMailSender`
-- **OpenAPI / Swagger UI** — interactive docs at `/swagger-ui.html`
+- **OpenAPI / Swagger UI** — interactive docs at `/swagger-ui/index.html`
 
 ## Project Structure
 
@@ -91,7 +91,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=local
 ```
 
 API: `http://localhost:8080`  
-Swagger UI: `http://localhost:8080/swagger-ui.html`
+Swagger UI: `http://localhost:8080/swagger-ui/index.html`
 
 ## Environment Variables
 
