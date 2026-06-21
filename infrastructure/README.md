@@ -6,10 +6,9 @@ Terraform configuration that provisions the Azure resources needed to run the He
 
 ```
 Azure
-├── Resource Group
-├── App Service Plan (Linux)
-├── Linux Web App  ← runs the Docker image from GHCR
-└── Application Insights  ← optional APM / monitoring
+├── Resource Group   (healthcare-rg)
+├── App Service Plan (ASP-healthcarerg-a501)
+└── Linux Web App    (Healthcare-Booking) ← runs the Docker image from GHCR
 ```
 
 External services (managed outside Terraform):
@@ -34,27 +33,24 @@ Terraform stores its state remotely in Azure Blob Storage so the CI/CD pipeline 
 ```bash
 az login
 
-RESOURCE_GROUP="healthcare-api-rg"
-STORAGE_ACCOUNT="healthcareapitfstate"   # must be globally unique
-
-az group create -n $RESOURCE_GROUP -l eastus
+az group create -n healthcare-api-rg -l eastus
 
 az storage account create \
-  -n $STORAGE_ACCOUNT \
-  -g $RESOURCE_GROUP \
+  -n healthcareapitfstate \
+  -g healthcare-api-rg \
   -l eastus \
   --sku Standard_LRS
 
 az storage container create \
   -n tfstate \
-  --account-name $STORAGE_ACCOUNT
+  --account-name healthcareapitfstate
 ```
 
 ### 2. Create a Service Principal for CI/CD
 
 ```bash
 az ad sp create-for-rbac \
-  --name healthcare-api-sp \
+  --name healthcare-api-github \
   --role Contributor \
   --scopes /subscriptions/$(az account show --query id -o tsv)
 ```
@@ -119,17 +115,14 @@ After `terraform apply`:
 terraform output app_service_url        # public URL of your app
 terraform output app_service_name       # name of the App Service resource
 terraform output resource_group_name    # resource group
-
-# Sensitive — requires -json flag
-terraform output -json application_insights_instrumentation_key
 ```
 
 ## CI/CD Pipeline
 
-The pipeline lives at `.github/workflows/ci-cd.yml` in the **repo root** — GitHub requires that exact path and won't pick up workflows from anywhere else.
+The pipeline lives at `.github/workflows/ci-cd.yml` in the **repo root**.
 
 On every push to `main` the pipeline:
-1. Runs tests (H2 in-memory, no external services needed)
+1. Runs all 34 tests (unit + integration via Testcontainers — Docker required on the runner)
 2. Runs a Trivy security scan
 3. Builds and pushes a Docker image to GHCR
 4. Runs `terraform apply` (using the secrets below)
@@ -147,8 +140,7 @@ Add these in your repo → Settings → Secrets and variables → Actions:
 | `AZURE_CLIENT_SECRET` | Service principal `password` |
 | `AZURE_SUBSCRIPTION_ID` | Your Azure subscription ID |
 | `AZURE_TENANT_ID` | Service principal `tenant` |
-| `AZURE_PUBLISH_PROFILE` | App Service → Get publish profile (XML file contents) |
-| `APP_SERVICE_NAME` | Name of the App Service resource (e.g. `healthcare-api-prod-app`) |
+| `APP_SERVICE_NAME` | `Healthcare-Booking` |
 | `TF_VAR_SPRING_DATASOURCE_URL` | JDBC URL for Neon |
 | `TF_VAR_SPRING_DATASOURCE_USERNAME` | Neon username |
 | `TF_VAR_SPRING_DATASOURCE_PASSWORD` | Neon password |
@@ -158,25 +150,14 @@ Add these in your repo → Settings → Secrets and variables → Actions:
 | `MAIL_USERNAME` | Gmail sender address |
 | `MAIL_PASSWORD` | Gmail app password |
 
-## Monitoring
-
-Application Insights is provisioned automatically. To connect it to your app, add the instrumentation key as an app setting:
-
-```bash
-KEY=$(terraform output -json application_insights_instrumentation_key | jq -r '.value')
-
-az webapp config appsettings set \
-  -g $(terraform output -raw resource_group_name) \
-  -n $(terraform output -raw app_service_name) \
-  --settings APPINSIGHTS_INSTRUMENTATIONKEY=$KEY
-```
-
 ## Viewing App Service Logs
 
 ```bash
-az webapp log tail \
-  -g $(terraform output -raw resource_group_name) \
-  -n $(terraform output -raw app_service_name)
+# Live log stream
+az webapp log tail --resource-group healthcare-rg --name Healthcare-Booking
+
+# Download recent logs
+az webapp log download --resource-group healthcare-rg --name Healthcare-Booking
 ```
 
 ## Troubleshooting

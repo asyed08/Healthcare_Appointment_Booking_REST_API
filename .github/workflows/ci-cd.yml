@@ -15,7 +15,8 @@ env:
 jobs:
   # ---------------------------------------------------------------------------
   # 1. Build & Test
-  #    Tests use H2 (in-memory) so no external Postgres or Kafka needed here.
+  #    Integration tests use Testcontainers (real Postgres via Docker).
+  #    Kafka is mocked — no external broker needed.
   # ---------------------------------------------------------------------------
   build-and-test:
     name: Build and Test
