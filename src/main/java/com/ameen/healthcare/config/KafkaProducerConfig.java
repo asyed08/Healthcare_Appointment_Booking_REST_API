@@ -17,7 +17,7 @@ import java.util.Map;
 
 /**
  * Kafka producer configuration for publishing appointment events.
- * Supports both local development (embedded broker) and production (Confluent Cloud).
+ * Configured for Confluent Cloud (SASL_SSL).
  */
 @Configuration
 @EnableKafka
