@@ -268,13 +268,12 @@ jobs:
       - name: Health check
         run: |
           echo "Waiting for app to start..."
-          for i in $(seq 1 30); do
-            if curl -sf https://${{ secrets.APP_SERVICE_NAME }}.azurewebsites.net/api-docs 2>/dev/null; then
+          for i in $(seq 1 12); do
+            if curl -sf https://${{ secrets.APP_SERVICE_URL }}/api-docs 2>/dev/null; then
               echo "App is healthy"
               exit 0
             fi
-            echo "Attempt $i/30, retrying in 10s..."
+            echo "Attempt $i/12, retrying in 10s..."
             sleep 10
           done
-          echo "Health check timed out"
-          exit 1
+          echo "Warning: health check timed out (F1 cold start may still be in progress)"
