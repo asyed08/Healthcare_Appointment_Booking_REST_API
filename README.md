@@ -59,6 +59,7 @@ src/main/java/com/ameen/healthcare/
 
 - Java 17
 - Maven 3.8+
+- Docker (required for integration tests via Testcontainers)
 - A [Neon](https://neon.tech) PostgreSQL database
 - A [Confluent Cloud](https://confluent.io) Kafka cluster
 
