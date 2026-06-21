@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 /**
  * Published when an appointment is successfully booked.
- * Triggers notification workflows (email, SMS, calendar sync).
+ * Triggers email notification to the patient via the Kafka consumer.
  */
 public class AppointmentCreatedEvent implements Serializable {
 
