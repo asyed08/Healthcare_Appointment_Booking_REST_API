@@ -1,13 +1,7 @@
-variable "azure_region" {
-  description = "Azure region"
-  type        = string
-  default     = "East US"
-}
-
 variable "app_service_sku" {
-  description = "App Service Plan SKU (B1 = cheapest, S1 = standard)"
+  description = "App Service Plan SKU (F1 = free, B1 = basic)"
   type        = string
-  default     = "B1"
+  default     = "F1"
 }
 
 # ---------------------------------------------------------------------------
