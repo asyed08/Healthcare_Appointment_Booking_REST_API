@@ -6,6 +6,7 @@ import com.ameen.healthcare.exception.ResourceNotFoundException;
 import com.ameen.healthcare.repository.UserRepository;
 import com.ameen.healthcare.service.AppointmentService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -31,6 +32,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/appointments")
 @Tag(name = "Appointments", description = "Book, cancel and query appointments")
+@SecurityRequirement(name = "bearerAuth")
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
