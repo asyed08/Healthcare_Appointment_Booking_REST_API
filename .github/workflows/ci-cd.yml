@@ -89,6 +89,8 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.6"
 
       - name: Terraform Format Check
         run: terraform fmt -check -recursive
@@ -130,7 +132,10 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const plan = fs.readFileSync('./infrastructure/tfplan.txt', 'utf8');
+            const planFile = './infrastructure/tfplan.txt';
+            const plan = fs.existsSync(planFile)
+              ? fs.readFileSync(planFile, 'utf8')
+              : 'Terraform plan did not produce output (a previous step may have failed).';
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -200,6 +205,8 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.6"
 
       - name: Terraform Init
         run: terraform init
@@ -216,7 +223,6 @@ jobs:
           ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
           ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          TF_VAR_environment: prod
           TF_VAR_spring_datasource_url: ${{ secrets.TF_VAR_SPRING_DATASOURCE_URL }}
           TF_VAR_spring_datasource_username: ${{ secrets.TF_VAR_SPRING_DATASOURCE_USERNAME }}
           TF_VAR_spring_datasource_password: ${{ secrets.TF_VAR_SPRING_DATASOURCE_PASSWORD }}
