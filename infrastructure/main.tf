@@ -81,6 +81,9 @@ resource "azurerm_linux_web_app" "main" {
     MAIL_USERNAME = var.mail_username
     MAIL_PASSWORD = var.mail_password
 
+    # Spring profile
+    SPRING_PROFILES_ACTIVE = "prod"
+
     # Docker / Azure App Service
     WEBSITES_PORT                   = "8080"
     DOCKER_REGISTRY_SERVER_URL      = "https://ghcr.io"
