@@ -4,22 +4,6 @@ variable "azure_region" {
   default     = "East US"
 }
 
-variable "environment" {
-  description = "Environment (dev, staging, prod)"
-  type        = string
-  default     = "prod"
-  validation {
-    condition     = contains(["dev", "staging", "prod"], var.environment)
-    error_message = "Must be dev, staging, or prod."
-  }
-}
-
-variable "project_name" {
-  description = "Project name used as a prefix for all resources"
-  type        = string
-  default     = "healthcare-api"
-}
-
 variable "app_service_sku" {
   description = "App Service Plan SKU (B1 = cheapest, S1 = standard)"
   type        = string

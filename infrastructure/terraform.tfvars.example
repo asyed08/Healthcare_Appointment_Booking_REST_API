@@ -2,8 +2,6 @@
 # Never commit terraform.tfvars — it contains secrets.
 
 azure_region    = "East US"
-environment     = "prod"
-project_name    = "healthcare-api"
 app_service_sku = "B1"
 
 # Neon Tech Postgres — use the JDBC format (not the libpq format Neon shows you)
@@ -26,7 +24,3 @@ mail_password = "your-gmail-app-password"
 ghcr_username = "your-github-username"
 ghcr_token    = "ghp_your_personal_access_token"
 ghcr_image    = "ghcr.io/your-github-username/healthcare_appointment_booking_rest_api"
-
-tags = {
-  CostCenter = "Engineering"
-}
