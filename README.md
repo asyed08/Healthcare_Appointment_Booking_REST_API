@@ -2,6 +2,8 @@
 
 A Spring Boot REST API for managing healthcare appointments, doctor availability, and patient profiles — with JWT authentication, Kafka-driven notifications, and optimistic locking for concurrent booking safety.
 
+**Live demo:** [Swagger UI](https://healthcare-booking-eycvcuchd0g0gzb2.centralus-01.azurewebsites.net/swagger-ui/index.html) — deployed on Azure App Service (Free tier; allow ~30s on first load if the instance is sleeping)
+
 ## Tech Stack
 
 | Layer | Technology |
