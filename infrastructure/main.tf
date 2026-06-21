@@ -39,7 +39,7 @@ locals {
 # Resource Group
 # ---------------------------------------------------------------------------
 resource "azurerm_resource_group" "main" {
-  name     = "${local.prefix}-rg"
+  name     = "healthcare-rg"
   location = var.azure_region
   tags     = local.common_tags
 }
@@ -48,7 +48,7 @@ resource "azurerm_resource_group" "main" {
 # App Service Plan
 # ---------------------------------------------------------------------------
 resource "azurerm_service_plan" "main" {
-  name                = "${local.prefix}-asp"
+  name                = "ASP-healthcarerg-a501"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   os_type             = "Linux"
@@ -60,7 +60,7 @@ resource "azurerm_service_plan" "main" {
 # Linux Web App  (runs Docker image from GHCR)
 # ---------------------------------------------------------------------------
 resource "azurerm_linux_web_app" "main" {
-  name                = "${local.prefix}-app"
+  name                = "Healthcare-Booking"
   location            = azurerm_resource_group.main.location
   resource_group_name = azurerm_resource_group.main.name
   service_plan_id     = azurerm_service_plan.main.id
@@ -103,16 +103,4 @@ resource "azurerm_linux_web_app" "main" {
       docker_registry_url = "https://ghcr.io"
     }
   }
-}
-
-# ---------------------------------------------------------------------------
-# Application Insights  (optional but useful for monitoring)
-# ---------------------------------------------------------------------------
-resource "azurerm_application_insights" "main" {
-  name                = "${local.prefix}-ai"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  application_type    = "web"
-  retention_in_days   = 30
-  tags                = local.common_tags
 }
