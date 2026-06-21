@@ -1,132 +1,118 @@
 variable "azure_region" {
-  description = "Azure region for resources"
+  description = "Azure region"
   type        = string
   default     = "East US"
-
-  validation {
-    condition     = contains(["East US", "West US", "East US 2", "West US 2", "North Europe", "West Europe"], var.azure_region)
-    error_message = "Please specify a valid Azure region."
-  }
 }
 
 variable "environment" {
-  description = "Environment name (dev, staging, prod)"
+  description = "Environment (dev, staging, prod)"
   type        = string
-  default     = "dev"
-
+  default     = "prod"
   validation {
     condition     = contains(["dev", "staging", "prod"], var.environment)
-    error_message = "Environment must be one of: dev, staging, prod"
+    error_message = "Must be dev, staging, or prod."
   }
 }
 
 variable "project_name" {
-  description = "Project name"
+  description = "Project name used as a prefix for all resources"
   type        = string
   default     = "healthcare-api"
 }
 
 variable "app_service_sku" {
-  description = "App Service Plan SKU"
+  description = "App Service Plan SKU (B1 = cheapest, S1 = standard)"
   type        = string
-  default     = "B2"
-
-  validation {
-    condition     = contains(["B1", "B2", "B3", "S1", "S2", "S3"], var.app_service_sku)
-    error_message = "App Service SKU must be one of: B1, B2, B3, S1, S2, S3"
-  }
+  default     = "B1"
 }
 
-variable "db_admin_username" {
-  description = "PostgreSQL admin username"
+# ---------------------------------------------------------------------------
+# Database (Neon Tech)
+# ---------------------------------------------------------------------------
+variable "spring_datasource_url" {
+  description = "JDBC URL for Neon Postgres — e.g. jdbc:postgresql://ep-xxx.neon.tech/neondb?sslmode=require"
   type        = string
   sensitive   = true
-  default     = "psqladmin"
 }
 
-variable "db_admin_password" {
-  description = "PostgreSQL admin password (minimum 8 characters, must contain uppercase, lowercase, number, special character)"
+variable "spring_datasource_username" {
+  description = "Neon Postgres username"
   type        = string
   sensitive   = true
-
-  validation {
-    condition     = length(var.db_admin_password) >= 8 && can(regex("[A-Z]", var.db_admin_password)) && can(regex("[a-z]", var.db_admin_password)) && can(regex("[0-9]", var.db_admin_password)) && can(regex("[!@#$%^&*]", var.db_admin_password))
-    error_message = "Database password must be at least 8 characters and contain uppercase, lowercase, number, and special character."
-  }
 }
 
-variable "db_name" {
-  description = "PostgreSQL database name"
+variable "spring_datasource_password" {
+  description = "Neon Postgres password"
   type        = string
-  default     = "healthcaredb"
+  sensitive   = true
 }
 
-variable "db_sku" {
-  description = "PostgreSQL Flexible Server SKU"
-  type        = string
-  default     = "B_Standard_B1ms"
-
-  validation {
-    condition     = can(regex("^(B_|D_|E_)", var.db_sku))
-    error_message = "Database SKU must be a valid PostgreSQL Flexible Server SKU."
-  }
-}
-
-variable "db_storage_mb" {
-  description = "PostgreSQL storage in MB"
-  type        = number
-  default     = 32768 # 32 GB
-
-  validation {
-    condition     = var.db_storage_mb >= 32768 && var.db_storage_mb <= 2097152
-    error_message = "Storage must be between 32 GB and 2 TB."
-  }
-}
-
-variable "db_ha_enabled" {
-  description = "Enable PostgreSQL High Availability"
-  type        = bool
-  default     = false
-}
-
-variable "db_geo_redundant_backup" {
-  description = "Enable geo-redundant backup for PostgreSQL"
-  type        = bool
-  default     = false
-}
-
-variable "key_vault_purge_protection" {
-  description = "Enable purge protection on Key Vault"
-  type        = bool
-  default     = true
-}
-
+# ---------------------------------------------------------------------------
+# Kafka (Confluent Cloud)
+# ---------------------------------------------------------------------------
 variable "kafka_bootstrap_servers" {
-  description = "Kafka bootstrap servers (comma-separated)"
+  description = "Confluent Cloud bootstrap server — e.g. pkc-xxx.eastus.azure.confluent.cloud:9092"
   type        = string
   sensitive   = true
-  default     = "localhost:9092"
 }
 
-variable "jwt_secret_key" {
-  description = "JWT secret key for token signing"
+variable "kafka_sasl_jaas_config" {
+  description = "Full JAAS config string for Confluent Cloud SASL/PLAIN auth"
   type        = string
   sensitive   = true
+}
 
+# ---------------------------------------------------------------------------
+# Auth
+# ---------------------------------------------------------------------------
+variable "jwt_secret_key" {
+  description = "Base64-encoded JWT signing key (min 32 chars)"
+  type        = string
+  sensitive   = true
   validation {
     condition     = length(var.jwt_secret_key) >= 32
-    error_message = "JWT secret key must be at least 32 characters long."
+    error_message = "JWT secret key must be at least 32 characters."
   }
 }
 
-variable "app_settings" {
-  description = "Additional app settings for App Service"
-  type        = map(string)
-  default     = {}
+# ---------------------------------------------------------------------------
+# Email
+# ---------------------------------------------------------------------------
+variable "mail_username" {
+  description = "Gmail address used as the sender"
+  type        = string
 }
 
+variable "mail_password" {
+  description = "Gmail app password (not your account password)"
+  type        = string
+  sensitive   = true
+}
+
+# ---------------------------------------------------------------------------
+# GitHub Container Registry (GHCR)
+# ---------------------------------------------------------------------------
+variable "ghcr_username" {
+  description = "GitHub username (used to pull the Docker image from GHCR)"
+  type        = string
+}
+
+variable "ghcr_token" {
+  description = "GitHub PAT with read:packages scope (to pull from GHCR)"
+  type        = string
+  sensitive   = true
+}
+
+variable "ghcr_image" {
+  description = "Full GHCR image path without tag — e.g. ghcr.io/your-username/healthcare_appointment_booking_rest_api"
+  type        = string
+}
+
+# ---------------------------------------------------------------------------
+# Misc
+# ---------------------------------------------------------------------------
 variable "tags" {
-  description = "Additional tags to apply to all resources"
+  description = "Extra tags to add to all resources"
   type        = map(string)
   default     = {}
 }

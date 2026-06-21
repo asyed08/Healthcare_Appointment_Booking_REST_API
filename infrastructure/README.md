@@ -1,431 +1,188 @@
-# Healthcare API - Terraform Infrastructure
+# Infrastructure — Terraform on Azure
 
-This directory contains the Infrastructure as Code (IaC) for deploying the Healthcare Appointment Booking REST API to Azure using Terraform.
+Terraform configuration that provisions the Azure resources needed to run the Healthcare API.
 
-## Architecture Overview
+## What Gets Provisioned
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      Azure Resources                        │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌──────────────────────────────────────────────────┐     │
-│  │          App Service (Linux - Java 17)           │     │
-│  │  - Tomcat 10.0 runtime                           │     │
-│  │  - Managed Identity (System Assigned)            │     │
-│  │  - HTTPS only                                    │     │
-│  └──────────────────────────────────────────────────┘     │
-│                           ↓                                │
-│  ┌──────────────────────────────────────────────────┐     │
-│  │    PostgreSQL Flexible Server (v15)             │     │
-│  │  - Automated backups (7+ days)                   │     │
-│  │  - Optional HA (Zone-Redundant)                  │     │
-│  │  - Firewall rules (App Service integration)      │     │
-│  └──────────────────────────────────────────────────┘     │
-│                           ↓                                │
-│  ┌──────────────────────────────────────────────────┐     │
-│  │         Azure Key Vault (Standard)               │     │
-│  │  - Secrets: DB credentials, JWT key, etc.       │     │
-│  │  - Managed Identity access policy                │     │
-│  │  - Purge protection enabled                      │     │
-│  └──────────────────────────────────────────────────┘     │
-│                                                             │
-│  ┌──────────────────────────────────────────────────┐     │
-│  │    Application Insights + Log Analytics          │     │
-│  │  - Application monitoring & diagnostics          │     │
-│  │  - Performance tracking & alerting               │     │
-│  └──────────────────────────────────────────────────┘     │
-│                                                             │
-│  ┌──────────────────────────────────────────────────┐     │
-│  │   Container Registry (optional, for images)     │     │
-│  │  - Private Docker image repository               │     │
-│  └──────────────────────────────────────────────────┘     │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+Azure
+├── Resource Group
+├── App Service Plan (Linux)
+├── Linux Web App  ← runs the Docker image from GHCR
+└── Application Insights  ← optional APM / monitoring
 ```
+
+External services (managed outside Terraform):
+- **Database** — [Neon Tech](https://neon.tech) PostgreSQL (serverless, free tier available)
+- **Kafka** — [Confluent Cloud](https://confluent.io) (free tier available)
+- **Docker registry** — GitHub Container Registry (GHCR, free for public repos)
 
 ## Prerequisites
 
-1. **Azure Subscription**: Active Azure account with appropriate permissions
-2. **Terraform**: v1.5.0+
-   ```bash
-   brew install terraform  # macOS
-   ```
-3. **Azure CLI**: v2.50.0+
-   ```bash
-   brew install azure-cli  # macOS
-   ```
-4. **Service Principal**: For CI/CD authentication
-5. **Storage Account**: For Terraform state backend
+- [Terraform](https://developer.hashicorp.com/terraform/install) v1.5+  
+  `brew install terraform`
+- [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)  
+  `brew install azure-cli`
+- An active Azure subscription
 
-## Initial Setup
+## One-time Setup
 
-### 1. Create Resource Group and Backend Storage
+### 1. Create the Terraform state backend
+
+Terraform stores its state remotely in Azure Blob Storage so the CI/CD pipeline and your local machine share the same state.
 
 ```bash
-# Set variables
-RESOURCE_GROUP="healthcare-api-rg"
-LOCATION="eastus"
-STORAGE_ACCOUNT="healthcareapitfstate"
-CONTAINER_NAME="tfstate"
-
-# Create resource group
-az group create \
-  --name $RESOURCE_GROUP \
-  --location $LOCATION
-
-# Create storage account
-az storage account create \
-  --name $STORAGE_ACCOUNT \
-  --resource-group $RESOURCE_GROUP \
-  --location $LOCATION \
-  --sku Standard_LRS
-
-# Get storage account access key
-STORAGE_KEY=$(az storage account keys list \
-  --account-name $STORAGE_ACCOUNT \
-  --resource-group $RESOURCE_GROUP \
-  --query "[0].value" -o tsv)
-
-# Create container for Terraform state
-az storage container create \
-  --name $CONTAINER_NAME \
-  --account-name $STORAGE_ACCOUNT \
-  --account-key $STORAGE_KEY
-```
-
-### 2. Configure Azure CLI Authentication
-
-```bash
-# Login to Azure
 az login
 
-# Set default subscription
-az account set --subscription "YOUR_SUBSCRIPTION_ID"
+RESOURCE_GROUP="healthcare-api-rg"
+STORAGE_ACCOUNT="healthcareapitfstate"   # must be globally unique
 
-# Verify authentication
-az account show
+az group create -n $RESOURCE_GROUP -l eastus
+
+az storage account create \
+  -n $STORAGE_ACCOUNT \
+  -g $RESOURCE_GROUP \
+  -l eastus \
+  --sku Standard_LRS
+
+az storage container create \
+  -n tfstate \
+  --account-name $STORAGE_ACCOUNT
 ```
 
-### 3. Initialize Terraform
+### 2. Create a Service Principal for CI/CD
+
+```bash
+az ad sp create-for-rbac \
+  --name healthcare-api-sp \
+  --role Contributor \
+  --scopes /subscriptions/$(az account show --query id -o tsv)
+```
+
+Save the output — you'll need `appId`, `password`, and `tenant` as GitHub secrets.
+
+### 3. Configure variables
+
+```bash
+cd infrastructure
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your real values
+```
+
+Required values in `terraform.tfvars`:
+
+| Variable | Where to find it |
+|----------|-----------------|
+| `spring_datasource_url` | Neon dashboard → Connection string (convert to JDBC format: `jdbc:postgresql://...`) |
+| `spring_datasource_username` | Neon dashboard |
+| `spring_datasource_password` | Neon dashboard |
+| `kafka_bootstrap_servers` | Confluent Cloud → Cluster → Endpoints |
+| `kafka_sasl_jaas_config` | Confluent Cloud → API Keys (wrap in JAAS format — see example file) |
+| `jwt_secret_key` | Any Base64 string ≥ 32 chars |
+| `mail_username` | Your Gmail address |
+| `mail_password` | Gmail → Security → App Passwords |
+| `ghcr_username` | Your GitHub username |
+| `ghcr_token` | GitHub → Settings → Developer settings → Personal access tokens (need `read:packages`) |
+| `ghcr_image` | `ghcr.io/<github-username>/<repo-name>` |
+
+### 4. Initialise and deploy
 
 ```bash
 cd infrastructure
 
-# Create backend config file
-cat > backend-config.hcl << EOF
-storage_account_name = "healthcareapitfstate"
-container_name       = "tfstate"
-key                  = "healthcare-api.tfstate"
-resource_group_name  = "healthcare-api-rg"
-access_key           = "$STORAGE_KEY"
-EOF
-
-# Initialize with backend
-terraform init -backend-config=backend-config.hcl
+terraform init
+terraform plan      # review what will be created
+terraform apply     # deploy
 ```
 
-### 4. Configure Variables
+## Day-to-day Commands
 
 ```bash
-# Copy example file
-cp terraform.tfvars.example terraform.tfvars
+# See what's currently deployed
+terraform show
 
-# Edit with your values
-nano terraform.tfvars
-```
+# Preview changes without applying
+terraform plan
 
-**Required Variables:**
-- `db_admin_password`: PostgreSQL password (min 8 chars, uppercase, lowercase, number, special char)
-- `jwt_secret_key`: JWT signing key (min 32 chars)
-- `kafka_bootstrap_servers`: Kafka broker addresses
+# Apply changes
+terraform apply
 
-## Deployment
-
-### Plan Deployment
-
-```bash
-# Review what Terraform will create
-terraform plan -out=tfplan
-
-# For specific environment
-terraform plan -var="environment=prod" -out=tfplan
-```
-
-### Apply Deployment
-
-```bash
-# Deploy to Azure
-terraform apply tfplan
-
-# Or directly (non-interactive)
-terraform apply -auto-approve
-```
-
-### Destroy Infrastructure
-
-```bash
-# Remove all resources (careful in production!)
+# Destroy everything (careful in production!)
 terraform destroy
-
-# With confirmation
-terraform destroy -auto-approve
-```
-
-## Environment Configurations
-
-### Development (Default)
-```hcl
-environment     = "dev"
-app_service_sku = "B2"
-db_sku          = "B_Standard_B1ms"
-db_ha_enabled   = false
-```
-
-### Staging
-```hcl
-environment     = "staging"
-app_service_sku = "S1"
-db_sku          = "D_Standard_D2s_v3"
-db_ha_enabled   = true
-```
-
-### Production
-```hcl
-environment     = "prod"
-app_service_sku = "S2"
-db_sku          = "D_Standard_D4s_v3"
-db_ha_enabled   = true
 ```
 
 ## Outputs
 
-After successful deployment, retrieve outputs:
+After `terraform apply`:
 
 ```bash
-# Show all outputs
-terraform output
+terraform output app_service_url        # public URL of your app
+terraform output app_service_name       # name of the App Service resource
+terraform output resource_group_name    # resource group
 
-# Get specific output
-terraform output app_service_default_hostname
-
-# Get sensitive outputs
-terraform output -json database_connection_string | jq -r '.value'
+# Sensitive — requires -json flag
+terraform output -json application_insights_instrumentation_key
 ```
 
-## Managing Secrets
+## CI/CD Pipeline
 
-### Add Secret to Key Vault
+The pipeline lives at `.github/workflows/ci-cd.yml` in the **repo root** — GitHub requires that exact path and won't pick up workflows from anywhere else.
+
+On every push to `main` the pipeline:
+1. Runs tests (H2 in-memory, no external services needed)
+2. Runs a Trivy security scan
+3. Builds and pushes a Docker image to GHCR
+4. Runs `terraform apply` (using the secrets below)
+5. Deploys the new image to App Service + health check
+
+On pull requests it runs steps 1–2 plus `terraform plan`, and posts the plan output as a PR comment so you can review infrastructure changes before merging.
+
+## GitHub Secrets for CI/CD
+
+Add these in your repo → Settings → Secrets and variables → Actions:
+
+| Secret | Description |
+|--------|-------------|
+| `AZURE_CLIENT_ID` | Service principal `appId` |
+| `AZURE_CLIENT_SECRET` | Service principal `password` |
+| `AZURE_SUBSCRIPTION_ID` | Your Azure subscription ID |
+| `AZURE_TENANT_ID` | Service principal `tenant` |
+| `AZURE_PUBLISH_PROFILE` | App Service → Get publish profile (XML file contents) |
+| `APP_SERVICE_NAME` | Name of the App Service resource (e.g. `healthcare-api-prod-app`) |
+| `TF_VAR_SPRING_DATASOURCE_URL` | JDBC URL for Neon |
+| `TF_VAR_SPRING_DATASOURCE_USERNAME` | Neon username |
+| `TF_VAR_SPRING_DATASOURCE_PASSWORD` | Neon password |
+| `TF_VAR_KAFKA_BOOTSTRAP_SERVERS` | Confluent bootstrap server |
+| `TF_VAR_KAFKA_SASL_JAAS_CONFIG` | Full JAAS config string |
+| `TF_VAR_JWT_SECRET_KEY` | JWT signing key |
+| `MAIL_USERNAME` | Gmail sender address |
+| `MAIL_PASSWORD` | Gmail app password |
+
+## Monitoring
+
+Application Insights is provisioned automatically. To connect it to your app, add the instrumentation key as an app setting:
 
 ```bash
-# Via Terraform
-terraform apply -var='new_secret_key=new_value'
+KEY=$(terraform output -json application_insights_instrumentation_key | jq -r '.value')
 
-# Via Azure CLI
-az keyvault secret set \
-  --vault-name $(terraform output -raw key_vault_name) \
-  --name my-secret \
-  --value my-secret-value
+az webapp config appsettings set \
+  -g $(terraform output -raw resource_group_name) \
+  -n $(terraform output -raw app_service_name) \
+  --settings APPINSIGHTS_INSTRUMENTATIONKEY=$KEY
 ```
 
-### Retrieve Secret from App Service
-
-Application can access secrets via Managed Identity:
-
-```java
-@Configuration
-public class KeyVaultConfig {
-    
-    @Value("@{@com.azure.identity.credential#keyVaultClient}")
-    private String jwtSecretKey;
-    
-    // Or use Azure SDK:
-    // SecretClient secretClient = new SecretClientBuilder()
-    //     .vaultUrl(keyVaultUri)
-    //     .credential(new DefaultAzureCredential())
-    //     .buildClient();
-    // String secret = secretClient.getSecret("jwt-secret-key").getValue();
-}
-```
-
-## Monitoring and Logging
-
-### Application Insights
-
-View application metrics and logs:
-```bash
-# Get instrumentation key
-terraform output application_insights_instrumentation_key
-
-# View logs
-az monitor app-insights events show \
-  --resource-group $(terraform output -raw resource_group_name) \
-  --app $(terraform output -raw resource_group_name)-app
-```
-
-### Log Analytics
-
-Query logs using KQL:
-```bash
-az monitor log-analytics query \
-  --workspace $(terraform output -raw log_analytics_workspace_id) \
-  --analytics-query "AppRequests | where DurationMs > 1000"
-```
-
-## Database Management
-
-### Connect to PostgreSQL
+## Viewing App Service Logs
 
 ```bash
-# Get connection string
-DB_HOST=$(terraform output -raw database_server_fqdn)
-DB_USER=$(terraform output -raw database_admin_username)
-
-# Connect with psql
-psql -h $DB_HOST -U $DB_USER -d healthcaredb
-```
-
-### Run Migrations
-
-```bash
-mvn flyway:migrate \
-  -Dflyway.url="jdbc:postgresql://$DB_HOST/healthcaredb" \
-  -Dflyway.user="$DB_USER" \
-  -Dflyway.password="$DB_PASSWORD"
-```
-
-## CI/CD Integration
-
-### GitHub Secrets Required
-
-Add these secrets to your GitHub repository settings:
-
-```
-AZURE_CLIENT_ID              - Service Principal Client ID
-AZURE_CLIENT_SECRET          - Service Principal Client Secret
-AZURE_SUBSCRIPTION_ID        - Azure Subscription ID
-AZURE_TENANT_ID              - Azure Tenant ID
-TF_VAR_DB_ADMIN_PASSWORD     - PostgreSQL admin password
-TF_VAR_KAFKA_BOOTSTRAP_SERVERS - Kafka brokers
-TF_VAR_JWT_SECRET_KEY        - JWT signing key
-APP_SERVICE_NAME             - App Service resource name
-DB_HOST                      - Database FQDN
-DB_USERNAME                  - Database username
-DB_PASSWORD                  - Database password
-AZURE_PUBLISH_PROFILE        - App Service publish profile
-AZURE_RESOURCE_GROUP         - Resource group name
-```
-
-### Service Principal Setup
-
-```bash
-# Create service principal
-az ad sp create-for-rbac \
-  --name healthcare-api-sp \
-  --role Contributor \
-  --scopes /subscriptions/YOUR_SUBSCRIPTION_ID
-
-# Output will show:
-# - appId (AZURE_CLIENT_ID)
-# - password (AZURE_CLIENT_SECRET)
-# - tenant (AZURE_TENANT_ID)
+az webapp log tail \
+  -g $(terraform output -raw resource_group_name) \
+  -n $(terraform output -raw app_service_name)
 ```
 
 ## Troubleshooting
 
-### Terraform State Issues
+**`terraform init` fails** — Make sure the storage account and container exist (step 1 above).
 
-```bash
-# Refresh state
-terraform refresh
+**`terraform apply` fails with auth error** — Run `az login` and confirm the right subscription is active: `az account show`.
 
-# Show current state
-terraform show
-
-# Import existing resource
-terraform import azurerm_resource_group.main /subscriptions/SUB_ID/resourceGroups/RG_NAME
-```
-
-### Database Connectivity
-
-```bash
-# Test connection
-psql -h $(terraform output -raw database_server_fqdn) \
-     -U psqladmin \
-     -d healthcaredb \
-     -c "SELECT version();"
-
-# Check firewall rules
-az postgres flexible-server firewall-rule list \
-  --resource-group $(terraform output -raw resource_group_name) \
-  --name $(terraform output -raw database_server_name)
-```
-
-### App Service Issues
-
-```bash
-# Check deployment logs
-az webapp log tail \
-  --resource-group $(terraform output -raw resource_group_name) \
-  --name $(terraform output -raw app_service_name)
-
-# Stream live logs
-az webapp log stream \
-  --resource-group $(terraform output -raw resource_group_name) \
-  --name $(terraform output -raw app_service_name)
-```
-
-## Cost Management
-
-### Estimate Costs
-
-```bash
-terraform plan -json | jq '.resource_changes[] | select(.type=="azurerm_*") | .change.after'
-```
-
-### Cost Reduction
-
-1. **Development**: Use smaller SKUs (B1/B2, Basic database)
-2. **Auto-scaling**: Configure App Service auto-scale rules
-3. **Reserved Instances**: For production workloads
-4. **Spot Instances**: For non-critical environments
-
-## Security Best Practices
-
-1. **Managed Identity**: App Service uses system-assigned identity
-2. **Key Vault**: Secrets never stored in code or config
-3. **Firewall**: Database accessible only from App Service
-4. **TLS/HTTPS**: All communication encrypted
-5. **Azure Policy**: Enforce compliance rules
-
-## Maintenance
-
-### Regular Tasks
-
-- **Weekly**: Monitor Application Insights dashboards
-- **Monthly**: Review and rotate secrets
-- **Quarterly**: Update Terraform provider versions
-- **Annually**: Review and optimize resource SKUs
-
-### Update Terraform
-
-```bash
-# Update providers
-terraform init -upgrade
-
-# Update local Terraform
-terraform version  # Check version
-brew upgrade terraform  # macOS
-```
-
-## Support and Documentation
-
-- [Terraform Azure Provider Docs](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs)
-- [Azure App Service Best Practices](https://learn.microsoft.com/en-us/azure/app-service/)
-- [PostgreSQL Flexible Server Guide](https://learn.microsoft.com/en-us/azure/postgresql/)
-- [Azure Key Vault Best Practices](https://learn.microsoft.com/en-us/azure/key-vault/general/best-practices)
-
-## Related Documentation
-
-- See [../CI_CD.md](../CI_CD.md) for GitHub Actions pipeline details
-- See [../DEPLOYMENT.md](../DEPLOYMENT.md) for deployment procedures
+**App won't start after deploy** — Check logs with the command above. Common causes: wrong env var values (especially the JDBC URL format), or the Docker image wasn't pushed before deploy ran.

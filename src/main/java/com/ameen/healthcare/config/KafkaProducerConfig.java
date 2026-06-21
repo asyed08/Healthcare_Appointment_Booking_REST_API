@@ -26,18 +26,20 @@ public class KafkaProducerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    /**
-     * KafkaTemplate for AppointmentCreatedEvent.
-     * Spring manages serialization via JsonSerializer.
-     */
+    @Value("${kafka.security.protocol:PLAINTEXT}")
+    private String securityProtocol;
+
+    @Value("${kafka.sasl.mechanism:PLAIN}")
+    private String saslMechanism;
+
+    @Value("${kafka.sasl.jaas.config:}")
+    private String saslJaasConfig;
+
     @Bean(name = "appointmentCreatedEventKafkaTemplate")
     public KafkaTemplate<String, AppointmentCreatedEvent> appointmentCreatedEventKafkaTemplate() {
         return new KafkaTemplate<>(new DefaultKafkaProducerFactory<>(producerConfig()));
     }
 
-    /**
-     * KafkaTemplate for AppointmentCancelledEvent.
-     */
     @Bean(name = "appointmentCancelledEventKafkaTemplate")
     public KafkaTemplate<String, AppointmentCancelledEvent> appointmentCancelledEventKafkaTemplate() {
         return new KafkaTemplate<>(new DefaultKafkaProducerFactory<>(producerConfig()));
@@ -48,9 +50,16 @@ public class KafkaProducerConfig {
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
-        props.put(ProducerConfig.ACKS_CONFIG, "all");  // wait for leader + replicas
+        props.put(ProducerConfig.ACKS_CONFIG, "all");
         props.put(ProducerConfig.RETRIES_CONFIG, 3);
-        props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);  // idempotent producer
+        props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG, true);
+        if (!"PLAINTEXT".equalsIgnoreCase(securityProtocol)) {
+            props.put("security.protocol", securityProtocol);
+            props.put("sasl.mechanism", saslMechanism);
+            if (!saslJaasConfig.isBlank()) {
+                props.put("sasl.jaas.config", saslJaasConfig);
+            }
+        }
         return props;
     }
 }
