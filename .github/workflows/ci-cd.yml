@@ -189,7 +189,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
       name: production
-      url: https://${{ secrets.APP_SERVICE_NAME }}.azurewebsites.net
+      url: https://healthcare-booking-eycvcuchd0g0gzb2.centralus-01.azurewebsites.net
 
     defaults:
       run:

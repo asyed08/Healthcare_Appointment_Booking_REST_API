@@ -35,7 +35,7 @@ locals {
 # ---------------------------------------------------------------------------
 resource "azurerm_resource_group" "main" {
   name     = "healthcare-rg"
-  location = var.azure_region
+  location = "East US"
   tags     = local.common_tags
 }
 
@@ -44,7 +44,7 @@ resource "azurerm_resource_group" "main" {
 # ---------------------------------------------------------------------------
 resource "azurerm_service_plan" "main" {
   name                = "ASP-healthcarerg-a501"
-  location            = azurerm_resource_group.main.location
+  location            = "Central US"
   resource_group_name = azurerm_resource_group.main.name
   os_type             = "Linux"
   sku_name            = var.app_service_sku
@@ -56,7 +56,7 @@ resource "azurerm_service_plan" "main" {
 # ---------------------------------------------------------------------------
 resource "azurerm_linux_web_app" "main" {
   name                = "Healthcare-Booking"
-  location            = azurerm_resource_group.main.location
+  location            = "Central US"
   resource_group_name = azurerm_resource_group.main.name
   service_plan_id     = azurerm_service_plan.main.id
   https_only          = true
@@ -89,7 +89,7 @@ resource "azurerm_linux_web_app" "main" {
   }
 
   site_config {
-    always_on           = true
+    always_on           = false
     minimum_tls_version = "1.2"
     http2_enabled       = true
 

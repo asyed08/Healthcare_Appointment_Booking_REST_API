@@ -1,8 +1,7 @@
 # Copy this file to terraform.tfvars and fill in real values.
 # Never commit terraform.tfvars — it contains secrets.
 
-azure_region    = "East US"
-app_service_sku = "B1"
+app_service_sku = "F1"
 
 # Neon Tech Postgres — use the JDBC format (not the libpq format Neon shows you)
 spring_datasource_url      = "jdbc:postgresql://ep-your-endpoint.neon.tech/neondb?sslmode=require"
