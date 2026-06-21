@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -104,6 +105,8 @@ public class AppointmentService {
             }
         }
 
+        MDC.put("userId", String.valueOf(userId));
+
         // 2. Load patient profile
         Patient patient = patientRepository.findByUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -140,6 +143,7 @@ public class AppointmentService {
         appointment = appointmentRepository.save(appointment);
 
         AppointmentResponse response = AppointmentResponse.from(appointment);
+        MDC.put("appointmentId", String.valueOf(appointment.getId()));
 
         // 6. Persist idempotency record
         if (idempotencyKey != null) {
@@ -172,6 +176,9 @@ public class AppointmentService {
     public AppointmentResponse cancelAppointment(Long appointmentId, Long userId) {
         Appointment appointment = appointmentRepository.findById(appointmentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found: " + appointmentId));
+
+        MDC.put("userId", String.valueOf(userId));
+        MDC.put("appointmentId", String.valueOf(appointmentId));
 
         // Only the patient who booked or the assigned doctor may cancel
         boolean isPatientOwner = appointment.getPatient().getUser().getId().equals(userId);
